@@ -12,6 +12,20 @@ export class ChecklistState {
     return (await this.state.storage.get('ticks')) || {};
   }
 
+  rowKey(row) {
+    const str = row
+      .map(c => String(c ?? '').trim().toLowerCase())
+      .join('|');
+
+    let h = 0;
+
+    for (let i = 0; i < str.length; i++) {
+      h = (Math.imul(31, h) + str.charCodeAt(i)) | 0;
+    }
+
+    return 'r' + (h >>> 0).toString(36);
+  }
+
   async buildCsv() {
     const dataset = await this.getDataset();
     const ticks = await this.getTicks();
@@ -23,11 +37,9 @@ export class ChecklistState {
     const escapeCsv = value => {
       const text = String(value ?? '');
 
-      if (/[",\n]/.test(text)) {
-        return '"' + text.replace(/"/g, '""') + '"';
-      }
-
-      return text;
+      return /[",\n]/.test(text)
+        ? '"' + text.replace(/"/g, '""') + '"'
+        : text;
     };
 
     const seen = {};
@@ -59,7 +71,9 @@ export class ChecklistState {
       lines.push(
         [
           ...row,
-          tick.checked ? 'Checked' : 'Not checked',
+          tick.checked
+            ? 'Checked'
+            : 'Not checked',
           tick.date || ''
         ]
           .map(escapeCsv)
@@ -68,38 +82,6 @@ export class ChecklistState {
     });
 
     return lines.join('\r\n');
-  }
-
-  rowKey(row) {
-    const str = row
-      .map(c =>
-        String(c ?? '')
-          .trim()
-          .toLowerCase()
-      )
-      .join('|');
-
-    let h = 0;
-
-    for (
-      let i = 0;
-      i < str.length;
-      i++
-    ) {
-      h =
-        (
-          Math.imul(31, h)
-          +
-          str.charCodeAt(i)
-        )
-        |
-        0;
-    }
-
-    return (
-      'r' +
-      (h >>> 0).toString(36)
-    );
   }
 
   async getResendApiKey() {
@@ -112,17 +94,15 @@ export class ChecklistState {
 
     // Cloudflare Secrets Store
     if (
-      typeof binding.get ===
-      'function'
+      typeof binding.get === 'function'
     ) {
       return await binding.get();
     }
 
-    // Fallback if later configured
-    // as a normal Worker Secret.
+    // Fallback if configured as
+    // a normal Worker Secret.
     if (
-      typeof binding ===
-      'string'
+      typeof binding === 'string'
     ) {
       return binding;
     }
@@ -192,7 +172,7 @@ export class ChecklistState {
           method: 'POST',
 
           headers: {
-            Authorization:
+            'Authorization':
               'Bearer ' + apiKey,
 
             'content-type':
@@ -233,6 +213,7 @@ export class ChecklistState {
 
       return {
         ok: false,
+
         error:
           'Resend API error (' +
           response.status +
@@ -252,9 +233,9 @@ export class ChecklistState {
 
     try {
 
-      // ======================================
+      // =========================================
       // GET /state
-      // ======================================
+      // =========================================
 
       if (
         url.pathname === '/state' &&
@@ -286,9 +267,9 @@ export class ChecklistState {
         });
       }
 
-      // ======================================
+      // =========================================
       // POST /dataset
-      // ======================================
+      // =========================================
 
       if (
         url.pathname === '/dataset' &&
@@ -311,8 +292,7 @@ export class ChecklistState {
           }
         );
 
-        // Uploading a new spreadsheet
-        // starts a new checklist.
+        // New sheet starts fresh
         await this.state.storage.put(
           'ticks',
           {}
@@ -323,9 +303,9 @@ export class ChecklistState {
         });
       }
 
-      // ======================================
+      // =========================================
       // POST /tick
-      // ======================================
+      // =========================================
 
       if (
         url.pathname === '/tick' &&
@@ -357,14 +337,15 @@ export class ChecklistState {
 
         return json({
           ok: true,
+
           tick:
             ticks[body.key]
         });
       }
 
-      // ======================================
+      // =========================================
       // POST /reset
-      // ======================================
+      // =========================================
 
       if (
         url.pathname === '/reset' &&
@@ -380,13 +361,11 @@ export class ChecklistState {
         });
       }
 
-      // ======================================
+      // =========================================
       // POST /send-report
       //
-      // Can be used at ANY moment.
-      // The checklist does NOT need
-      // to be complete.
-      // ======================================
+      // Can be used at any moment.
+      // =========================================
 
       if (
         url.pathname === '/send-report' &&
@@ -403,6 +382,7 @@ export class ChecklistState {
           return json(
             {
               ok: false,
+
               error:
                 'No spreadsheet is currently loaded'
             },
@@ -417,6 +397,7 @@ export class ChecklistState {
           return json(
             {
               ok: false,
+
               error:
                 result.error
             },
@@ -475,9 +456,9 @@ function json(
 }
 
 
-// ==========================================
+// =============================================
 // MAIN WORKER
-// ==========================================
+// =============================================
 
 export default {
   async fetch(

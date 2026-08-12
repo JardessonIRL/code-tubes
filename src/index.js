@@ -4,115 +4,175 @@ export class ChecklistState {
     this.env = env;
   }
 
+  // =====================================================
+  // STORAGE
+  // =====================================================
+
   async getDataset() {
-    return (await this.state.storage.get('dataset')) || null;
+    return (
+      await this.state.storage.get('dataset')
+    ) || null;
   }
 
   async getTicks() {
-    return (await this.state.storage.get('ticks')) || {};
+    return (
+      await this.state.storage.get('ticks')
+    ) || {};
   }
+
+  // =====================================================
+  // ROW KEY
+  // =====================================================
 
   rowKey(row) {
     const str = row
-      .map(c => String(c ?? '').trim().toLowerCase())
+      .map(
+        c =>
+          String(c ?? '')
+            .trim()
+            .toLowerCase()
+      )
       .join('|');
 
     let h = 0;
 
-    for (let i = 0; i < str.length; i++) {
-      h = (Math.imul(31, h) + str.charCodeAt(i)) | 0;
+    for (
+      let i = 0;
+      i < str.length;
+      i++
+    ) {
+      h =
+        (
+          Math.imul(31, h)
+          +
+          str.charCodeAt(i)
+        )
+        |
+        0;
     }
 
-    return 'r' + (h >>> 0).toString(36);
+    return (
+      'r'
+      +
+      (h >>> 0).toString(36)
+    );
   }
 
+  // =====================================================
+  // BUILD CSV REPORT
+  // =====================================================
+
   async buildCsv() {
-    const dataset = await this.getDataset();
-    const ticks = await this.getTicks();
+    const dataset =
+      await this.getDataset();
+
+    const ticks =
+      await this.getTicks();
 
     if (!dataset) {
       return '';
     }
 
-    const escapeCsv = value => {
-      const text = String(value ?? '');
+    const escapeCsv =
+      value => {
 
-      return /[",\n]/.test(text)
-        ? '"' + text.replace(/"/g, '""') + '"'
-        : text;
-    };
+        const text =
+          String(value ?? '');
+
+        if (
+          /[",\n]/.test(text)
+        ) {
+          return (
+            '"'
+            +
+            text.replace(
+              /"/g,
+              '""'
+            )
+            +
+            '"'
+          );
+        }
+
+        return text;
+      };
 
     const seen = {};
+
     const lines = [];
 
+    // Add report columns
     lines.push(
-      [...dataset.headers, 'Status', 'Checked date']
+      [
+        ...dataset.headers,
+        'Status',
+        'Checked date'
+      ]
         .map(escapeCsv)
         .join(',')
     );
 
-    dataset.rows.forEach(row => {
-      const base = this.rowKey(row);
+    dataset.rows.forEach(
+      row => {
 
-      seen[base] =
-        (seen[base] || 0) + 1;
+        const base =
+          this.rowKey(row);
 
-      const key =
-        seen[base] > 1
-          ? base + 'd' + seen[base]
-          : base;
+        seen[base] =
+          (seen[base] || 0)
+          +
+          1;
 
-      const tick =
-        ticks[key] || {
-          checked: false,
-          date: ''
-        };
+        const key =
+          seen[base] > 1
+            ?
+            base
+            +
+            'd'
+            +
+            seen[base]
+            :
+            base;
 
-      lines.push(
-        [
-          ...row,
-          tick.checked
-            ? 'Checked'
-            : 'Not checked',
-          tick.date || ''
-        ]
-          .map(escapeCsv)
-          .join(',')
-      );
-    });
+        const tick =
+          ticks[key]
+          ||
+          {
+            checked: false,
+            date: ''
+          };
+
+        lines.push(
+          [
+            ...row,
+
+            tick.checked
+              ?
+              'Checked'
+              :
+              'Not checked',
+
+            tick.date || ''
+          ]
+            .map(escapeCsv)
+            .join(',')
+        );
+
+      }
+    );
 
     return lines.join('\r\n');
   }
 
-  async getResendApiKey() {
-    const binding =
-      this.env.RESEND_API_KEY;
-
-    if (!binding) {
-      return null;
-    }
-
-    // Cloudflare Secrets Store
-    if (
-      typeof binding.get === 'function'
-    ) {
-      return await binding.get();
-    }
-
-    // Fallback if configured as
-    // a normal Worker Secret.
-    if (
-      typeof binding === 'string'
-    ) {
-      return binding;
-    }
-
-    return null;
-  }
+  // =====================================================
+  // MAILJET EMAIL
+  // =====================================================
 
   async sendReportEmail() {
-    const csv =
-      await this.buildCsv();
+
+    // -----------------------------------------
+    // Recipient
+    // -----------------------------------------
 
     const recipients =
       (
@@ -121,162 +181,318 @@ export class ChecklistState {
         ''
       )
         .split(',')
-        .map(email =>
-          email.trim()
+        .map(
+          email =>
+            email.trim()
         )
         .filter(Boolean);
 
-    if (!recipients.length) {
+    if (
+      !recipients.length
+    ) {
       return {
         ok: false,
+
         error:
           'No REPORT_RECIPIENTS configured'
       };
     }
 
+
+    // -----------------------------------------
+    // Mailjet credentials
+    // -----------------------------------------
+
     const apiKey =
-      await this.getResendApiKey();
+      this.env.MAILJET_API_KEY;
+
+    const secretKey =
+      this.env.MAILJET_SECRET_KEY;
+
 
     if (!apiKey) {
       return {
         ok: false,
+
         error:
-          'No RESEND_API_KEY configured'
+          'MAILJET_API_KEY is not configured'
       };
     }
 
-    const bytes =
+
+    if (!secretKey) {
+      return {
+        ok: false,
+
+        error:
+          'MAILJET_SECRET_KEY is not configured'
+      };
+    }
+
+
+    // -----------------------------------------
+    // Build CSV
+    // -----------------------------------------
+
+    const csv =
+      await this.buildCsv();
+
+
+    const csvBytes =
       new TextEncoder()
         .encode(csv);
 
-    let binary = '';
+
+    let binary =
+      '';
+
 
     for (
       let i = 0;
-      i < bytes.length;
+      i < csvBytes.length;
       i++
     ) {
       binary +=
         String.fromCharCode(
-          bytes[i]
+          csvBytes[i]
         );
     }
 
-    const base64 =
+
+    const base64Csv =
       btoa(binary);
+
+
+    // -----------------------------------------
+    // Basic Authentication
+    //
+    // Mailjet:
+    // username = API Key
+    // password = Secret Key
+    // -----------------------------------------
+
+    const auth =
+      btoa(
+        apiKey
+        +
+        ':'
+        +
+        secretKey
+      );
+
+
+    // -----------------------------------------
+    // Recipient objects
+    // -----------------------------------------
+
+    const mailjetRecipients =
+      recipients.map(
+        email => ({
+          Email: email
+        })
+      );
+
+
+    // -----------------------------------------
+    // Send through Mailjet
+    // -----------------------------------------
 
     const response =
       await fetch(
-        'https://api.resend.com/emails',
+        'https://api.mailjet.com/v3.1/send',
         {
           method: 'POST',
 
           headers: {
             'Authorization':
-              'Bearer ' + apiKey,
+              'Basic ' + auth,
 
-            'content-type':
+            'Content-Type':
               'application/json'
           },
 
-          body: JSON.stringify({
-            from:
-              'Code Tubes <Code Tubes <code-tubes@ucd.ie>',
+          body:
+            JSON.stringify({
+              Messages: [
+                {
+                  From: {
+                    Email:
+                      'ontheroadrivein@gmail.com',
 
-            to:
-              recipients,
+                    Name:
+                      'Code Tubes'
+                  },
 
-            subject:
-              'Code Tubes — checklist report',
+                  To:
+                    mailjetRecipients,
 
-            text:
-              'Attached is the current Code Tubes checklist report.',
+                  Subject:
+                    'Code Tubes — checklist report',
 
-            attachments: [
-              {
-                filename:
-                  'code-tubes-report.csv',
+                  TextPart:
+                    'Attached is the current Code Tubes checklist report.',
 
-                content:
-                  base64
-              }
-            ]
-          })
+                  HTMLPart:
+                    `
+                      <h2>Code Tubes</h2>
+
+                      <p>
+                        Attached is the current
+                        Code Tubes checklist report.
+                      </p>
+
+                      <p>
+                        The CSV contains both
+                        completed and pending items.
+                      </p>
+                    `,
+
+                  Attachments: [
+                    {
+                      ContentType:
+                        'text/csv',
+
+                      Filename:
+                        'code-tubes-report.csv',
+
+                      Base64Content:
+                        base64Csv
+                    }
+                  ]
+                }
+              ]
+            })
         }
       );
 
-    if (!response.ok) {
-      const errorText =
-        await response
-          .text()
-          .catch(() => '');
 
+    // -----------------------------------------
+    // Mailjet response
+    // -----------------------------------------
+
+    const responseText =
+      await response
+        .text()
+        .catch(
+          () => ''
+        );
+
+
+    if (
+      !response.ok
+    ) {
       return {
         ok: false,
 
         error:
-          'Resend API error (' +
-          response.status +
-          '): ' +
-          errorText
+          'Mailjet API error ('
+          +
+          response.status
+          +
+          '): '
+          +
+          responseText
       };
     }
 
+
+    // Mailjet can return HTTP success while
+    // containing detailed message information.
+
+    let responseData =
+      null;
+
+
+    try {
+      responseData =
+        JSON.parse(
+          responseText
+        );
+    } catch (err) {}
+
+
     return {
-      ok: true
+      ok: true,
+
+      response:
+        responseData
     };
   }
 
+
+  // =====================================================
+  // DURABLE OBJECT ROUTES
+  // =====================================================
+
   async fetch(request) {
+
     const url =
       new URL(request.url);
 
     try {
 
-      // =========================================
+      // =================================================
       // GET /state
-      // =========================================
+      //
+      // Full spreadsheet + checks.
+      // Called when the page loads.
+      // =================================================
 
       if (
-        url.pathname === '/state' &&
+        url.pathname === '/state'
+        &&
         request.method === 'GET'
       ) {
+
         const dataset =
           await this.getDataset();
 
         const ticks =
           await this.getTicks();
 
+
         return json({
           headers:
             dataset
-              ? dataset.headers
-              : [],
+              ?
+              dataset.headers
+              :
+              [],
 
           rows:
             dataset
-              ? dataset.rows
-              : [],
+              ?
+              dataset.rows
+              :
+              [],
 
           tickColIndex:
             dataset
-              ? dataset.tickColIndex
-              : -1,
+              ?
+              dataset.tickColIndex
+              :
+              -1,
 
           ticks
         });
       }
 
-      // =========================================
+
+      // =================================================
       // POST /dataset
-      // =========================================
+      //
+      // Store or replace the spreadsheet.
+      // =================================================
 
       if (
-        url.pathname === '/dataset' &&
+        url.pathname === '/dataset'
+        &&
         request.method === 'POST'
       ) {
+
         const body =
           await request.json();
+
 
         await this.state.storage.put(
           'dataset',
@@ -292,48 +508,64 @@ export class ChecklistState {
           }
         );
 
-        // New sheet starts fresh
+
+        // New spreadsheet =
+        // fresh checklist.
+
         await this.state.storage.put(
           'ticks',
           {}
         );
+
 
         return json({
           ok: true
         });
       }
 
-      // =========================================
+
+      // =================================================
       // POST /tick
-      // =========================================
+      //
+      // Save one checkbox.
+      // =================================================
 
       if (
-        url.pathname === '/tick' &&
+        url.pathname === '/tick'
+        &&
         request.method === 'POST'
       ) {
+
         const body =
           await request.json();
+
 
         const ticks =
           await this.getTicks();
 
+
         ticks[body.key] = {
+
           checked:
             !!body.checked,
 
           date:
             body.checked
-              ? new Date()
-                  .toLocaleDateString(
-                    'en-US'
-                  )
-              : ''
+              ?
+              new Date()
+                .toLocaleDateString(
+                  'en-US'
+                )
+              :
+              ''
         };
+
 
         await this.state.storage.put(
           'ticks',
           ticks
         );
+
 
         return json({
           ok: true,
@@ -343,42 +575,60 @@ export class ChecklistState {
         });
       }
 
-      // =========================================
+
+      // =================================================
       // POST /reset
-      // =========================================
+      //
+      // Clear all checkmarks.
+      // =================================================
 
       if (
-        url.pathname === '/reset' &&
+        url.pathname === '/reset'
+        &&
         request.method === 'POST'
       ) {
+
         await this.state.storage.put(
           'ticks',
           {}
         );
+
 
         return json({
           ok: true
         });
       }
 
-      // =========================================
+
+      // =================================================
       // POST /send-report
       //
-      // Can be used at any moment.
-      // =========================================
+      // Manual report.
+      //
+      // Can be sent with:
+      // 0%, 20%, 50%, 100%...
+      //
+      // No completion requirement.
+      // =================================================
 
       if (
-        url.pathname === '/send-report' &&
+        url.pathname === '/send-report'
+        &&
         request.method === 'POST'
       ) {
+
         const dataset =
           await this.getDataset();
 
+
         if (
-          !dataset ||
-          !dataset.rows ||
+          !dataset
+          ||
+          !dataset.rows
+          ||
           !dataset.rows.length
         ) {
+
           return json(
             {
               ok: false,
@@ -390,10 +640,15 @@ export class ChecklistState {
           );
         }
 
+
         const result =
           await this.sendReportEmail();
 
-        if (!result.ok) {
+
+        if (
+          !result.ok
+        ) {
+
           return json(
             {
               ok: false,
@@ -405,11 +660,18 @@ export class ChecklistState {
           );
         }
 
+
         return json({
           ok: true,
+
           sent: true
         });
       }
+
+
+      // =================================================
+      // NOT FOUND
+      // =================================================
 
       return json(
         {
@@ -419,16 +681,21 @@ export class ChecklistState {
         404
       );
 
-    } catch (err) {
+    }
+
+    catch (err) {
 
       return json(
         {
           error:
             String(
-              err &&
+              err
+              &&
               err.message
-                ? err.message
-                : err
+                ?
+                err.message
+                :
+                err
             )
         },
         500
@@ -438,10 +705,15 @@ export class ChecklistState {
 }
 
 
+// =====================================================
+// JSON RESPONSE HELPER
+// =====================================================
+
 function json(
   data,
   status = 200
 ) {
+
   return new Response(
     JSON.stringify(data),
     {
@@ -456,37 +728,54 @@ function json(
 }
 
 
-// =============================================
-// MAIN WORKER
-// =============================================
+// =====================================================
+// MAIN CLOUDFLARE WORKER
+// =====================================================
 
 export default {
+
   async fetch(
     request,
     env
   ) {
+
     const url =
       new URL(request.url);
+
+
+    // -------------------------------------------------
+    // API
+    // -------------------------------------------------
 
     if (
       url.pathname.startsWith(
         '/api/'
       )
     ) {
+
+      // Keep one fixed Durable Object.
+      //
+      // Do not change "singleton".
+      // Otherwise Cloudflare would use
+      // a different storage instance.
+
       const id =
         env.CHECKLIST
           .idFromName(
             'singleton'
           );
 
+
       const stub =
         env.CHECKLIST
           .get(id);
+
 
       const forwardUrl =
         new URL(
           request.url
         );
+
 
       forwardUrl.pathname =
         url.pathname.slice(
@@ -495,16 +784,23 @@ export default {
         ||
         '/';
 
-      const forwardReq =
+
+      const forwardRequest =
         new Request(
           forwardUrl.toString(),
           request
         );
 
+
       return stub.fetch(
-        forwardReq
+        forwardRequest
       );
     }
+
+
+    // -------------------------------------------------
+    // STATIC WEBSITE
+    // -------------------------------------------------
 
     return env.ASSETS.fetch(
       request

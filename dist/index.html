@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>code tubes</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+body{font-family:Segoe UI,system-ui,sans-serif;background:#F6F1E4;color:#2E2A22;margin:0;padding:32px 16px}
+.wrap{max-width:960px;margin:auto;background:#FFFEFA;border:1px solid #8B8168;border-radius:8px;padding:28px}
+h1{text-transform:uppercase;font-family:Courier New,monospace;margin-top:0}
+.drop{border:2px dashed #8B8168;border-radius:8px;padding:28px;text-align:center;cursor:pointer;margin-bottom:18px}
+input[type=file]{display:none}
+.controls{display:flex;gap:12px;flex-wrap:wrap;align-items:end;margin-bottom:16px}
+.field{display:flex;flex-direction:column;gap:6px}
+select,button,input[type=text]{font:inherit;padding:9px 12px;border:1px solid #8B8168;border-radius:5px;background:#fff}
+button{cursor:pointer}
+.search{width:100%;margin-bottom:14px}
+table{width:100%;border-collapse:collapse}
+th{background:#C9BFA5;text-align:left;padding:9px 12px}
+td{padding:9px 12px;border-top:1px solid #E4DBC4}
+.done{background:#E3EEE6}
+.check{text-align:center;width:90px}
+.progress{margin:10px 0;color:#6B6353}
+.hidden{display:none}
+@media(max-width:700px){.wrap{padding:18px 12px}.controls{flex-direction:column;align-items:stretch}select,button{width:100%}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>code tubes</h1>
+  <p id="subtitle">Import the sheet and choose which column will receive the checkboxes.</p>
+
+  <div id="uploadArea" style="display:none">
+    <div class="drop" id="dropZone"><strong>Click to choose</strong> or drop a file here<br>.xlsx, .xls, .csv or .txt</div>
+    <input type="file" id="fileInput" accept=".xlsx,.xls,.csv,.txt">
+  </div>
+
+  <div id="emptyState" style="display:none">No sheet has been loaded yet.</div>
+
+  <div id="afterUpload" style="display:none">
+    <div class="admin-only" style="margin-bottom:14px">
+      Sheet: <strong id="fileName"></strong> · <span id="rowCount"></span> rows · <a href="#" id="changeFile">replace file</a>
+    </div>
+
+    <div class="controls admin-only">
+      <div class="field">
+        <label for="colSelect">Column to check</label>
+        <select id="colSelect"></select>
+      </div>
+      <button id="resetBtn">Clear all progress</button>
+    </div>
+
+    <input id="searchInput" class="search" type="text" placeholder="Search anything in the sheet…">
+    <div class="progress" id="progressLine"></div>
+
+    <div style="overflow-x:auto">
+      <table id="dataTable"></table>
+    </div>
+  </div>
+</div>
+
+<script>
+let headers=[], rows=[], tickColIndex=-1, rowKeys=[], allTicks={};
+
+const fileInput=document.getElementById('fileInput');
+const dropZone=document.getElementById('dropZone');
+const uploadArea=document.getElementById('uploadArea');
+const emptyState=document.getElementById('emptyState');
+const afterUpload=document.getElementById('afterUpload');
+const fileNameEl=document.getElementById('fileName');
+const rowCountEl=document.getElementById('rowCount');
+const colSelect=document.getElementById('colSelect');
+const resetBtn=document.getElementById('resetBtn');
+const changeFile=document.getElementById('changeFile');
+const searchInput=document.getElementById('searchInput');
+const progressLine=document.getElementById('progressLine');
+
+const isAdmin=new URLSearchParams(location.search).get('admin')==='1';
+if(!isAdmin) document.querySelectorAll('.admin-only').forEach(el=>el.style.display='none');
+
+dropZone.addEventListener('click',()=>fileInput.click());
+dropZone.addEventListener('dragover',e=>e.preventDefault());
+dropZone.addEventListener('drop',e=>{e.preventDefault(); if(e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);});
+fileInput.addEventListener('change',e=>{if(e.target.files.length) handleFile(e.target.files[0]);});
+changeFile.addEventListener('click',e=>{e.preventDefault();afterUpload.style.display='none';uploadArea.style.display='block';fileInput.value='';});
+
+function hashRow(row){const s=row.map(c=>String(c??'').trim().toLowerCase()).join('|');let h=0;for(let i=0;i<s.length;i++)h=(Math.imul(31,h)+s.charCodeAt(i))|0;return'r'+(h>>>0).toString(36);}
+function buildKeys(){const seen={};rowKeys=rows.map(r=>{const b=hashRow(r);seen[b]=(seen[b]||0)+1;return seen[b]>1?b+'d'+seen[b]:b;});}
+
+function setupColumnSelect(preset){
+  colSelect.innerHTML='';
+  headers.forEach((h,i)=>{const o=document.createElement('option');o.value=i;o.textContent=h;colSelect.appendChild(o);});
+  tickColIndex=(typeof preset==='number'&&preset>=0)?preset:headers.length-1;
+  colSelect.value=tickColIndex;
+  colSelect.onchange=async()=>{tickColIndex=parseInt(colSelect.value,10);if(await saveDataset())renderTable();};
+}
+
+async function handleFile(file){
+  const ext=file.name.split('.').pop().toLowerCase();
+  if(ext==='txt'||ext==='csv'){
+    const text=await file.text();
+    const lines=text.split(/\r\n|\r|\n/).filter(l=>l.trim()!=='');
+    const d=lines[0].includes('\t')?'\t':',';
+    headers=lines[0].split(d).map(v=>v.trim());
+    rows=lines.slice(1).map(l=>l.split(d).map(v=>v.trim()));
+  } else {
+    const buf=await file.arrayBuffer();
+    const wb=XLSX.read(new Uint8Array(buf),{type:'array'});
+    const sheet=wb.Sheets[wb.SheetNames[0]];
+    const data=XLSX.utils.sheet_to_json(sheet,{header:1,defval:''});
+    headers=data[0].map(v=>String(v??'').trim()||'(no name)');
+    rows=data.slice(1).filter(r=>r.some(c=>String(c??'').trim()!==''));
+  }
+
+  allTicks={};
+  fileNameEl.textContent=file.name;
+  rowCountEl.textContent=rows.length;
+  uploadArea.style.display='none';
+  emptyState.style.display='none';
+  afterUpload.style.display='block';
+
+  setupColumnSelect();
+  buildKeys();
+  if(await saveDataset()) renderTable();
+}
+
+async function saveDataset(){
+  const res=await fetch('/api/dataset',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({headers,rows,tickColIndex})});
+  return res.ok;
+}
+
+async function saveTick(key,checked){
+  const res=await fetch('/api/tick',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({key,checked})});
+  return res.ok;
+}
+
+function updateProgress(){
+  let done=0;
+  rows.forEach((r,i)=>{if(allTicks[rowKeys[i]]?.checked)done++;});
+  progressLine.innerHTML='<strong>'+done+'</strong> of '+rows.length+' complete';
+}
+
+function applySearch(){
+  const term=searchInput.value.trim().toLowerCase();
+  document.querySelectorAll('#dataTable tbody tr').forEach(tr=>tr.classList.toggle('hidden',term&&!tr.dataset.search.includes(term)));
+}
+searchInput.addEventListener('input',applySearch);
+
+function renderTable(){
+  const table=document.getElementById('dataTable');
+  table.innerHTML='';
+  const thead=document.createElement('thead');
+  const hr=document.createElement('tr');
+  headers.forEach((h,i)=>{const th=document.createElement('th');th.textContent=i===tickColIndex?'✓':h;hr.appendChild(th);});
+  thead.appendChild(hr);table.appendChild(thead);
+
+  const tbody=document.createElement('tbody');table.appendChild(tbody);
+
+  rows.forEach((row,ri)=>{
+    const tr=document.createElement('tr');
+    tr.dataset.search=row.map(c=>String(c??'')).join(' ').toLowerCase();
+    const state=allTicks[rowKeys[ri]]||{checked:false,date:''};
+    if(state.checked)tr.classList.add('done');
+
+    row.forEach((cell,ci)=>{
+      const td=document.createElement('td');
+      if(ci===tickColIndex){
+        td.className='check';
+        const cb=document.createElement('input');
+        cb.type='checkbox';cb.checked=!!state.checked;
+        cb.addEventListener('change',async()=>{
+          allTicks[rowKeys[ri]]={checked:cb.checked,date:cb.checked?new Date().toLocaleDateString('en-US'):''};
+          tr.classList.toggle('done',cb.checked);
+          updateProgress();
+          if(!(await saveTick(rowKeys[ri],cb.checked))){
+            cb.checked=!cb.checked;
+            allTicks[rowKeys[ri]]={checked:cb.checked,date:''};
+            tr.classList.toggle('done',cb.checked);
+            updateProgress();
+          }
+        });
+        td.appendChild(cb);
+      }else{
+        td.textContent=cell;
+      }
+      tr.appendChild(td);
+    });
+
+    tbody.appendChild(tr);
+  });
+
+  updateProgress();
+  applySearch();
+}
+
+resetBtn.addEventListener('click',async()=>{
+  if(!confirm('Clear all saved checkmarks?'))return;
+  const res=await fetch('/api/reset',{method:'POST'});
+  if(res.ok){allTicks={};renderTable();}
+});
+
+async function init(){
+  const res=await fetch('/api/state');
+  if(!res.ok){if(isAdmin)uploadArea.style.display='block';else emptyState.style.display='block';return;}
+
+  const state=await res.json();
+
+  if(state.rows?.length){
+    headers=state.headers;
+    rows=state.rows;
+    tickColIndex=state.tickColIndex;
+    allTicks=state.ticks||{};
+    uploadArea.style.display='none';
+    emptyState.style.display='none';
+    afterUpload.style.display='block';
+    if(isAdmin){
+      fileNameEl.textContent='(current sheet)';
+      rowCountEl.textContent=rows.length;
+      setupColumnSelect(state.tickColIndex);
+    }
+    buildKeys();
+    renderTable();
+  }else if(isAdmin){
+    uploadArea.style.display='block';
+  }else{
+    emptyState.style.display='block';
+  }
+}
+
+init();
+</script>
+</body>
+</html>

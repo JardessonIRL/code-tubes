@@ -181,7 +181,7 @@ export class ChecklistState {
 
           body: JSON.stringify({
             from:
-              'Code Tubes <ana.cantosouza@ucdconnect.ie>',
+              'Code Tubes <Code Tubes <code-tubes@ucd.ie>',
 
             to:
               recipients,

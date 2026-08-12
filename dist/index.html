@@ -1,240 +1,2504 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>checktube</title>
+
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0"
+>
+
+<title>code tubes</title>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
 <style>
-body{font-family:Segoe UI,system-ui,sans-serif;background:#F6F1E4;color:#2E2A22;margin:0;padding:32px 16px}
-.wrap{max-width:960px;margin:auto;background:#FFFEFA;border:1px solid #8B8168;border-radius:8px;padding:28px}
-h1{text-transform:uppercase;font-family:Courier New,monospace;margin-top:0}
-.drop{border:2px dashed #8B8168;border-radius:8px;padding:28px;text-align:center;cursor:pointer;margin-bottom:18px}
-input[type=file]{display:none}
-.controls{display:flex;gap:12px;flex-wrap:wrap;align-items:end;margin-bottom:16px}
-.field{display:flex;flex-direction:column;gap:6px}
-select,button,input[type=text]{font:inherit;padding:9px 12px;border:1px solid #8B8168;border-radius:5px;background:#fff}
-button{cursor:pointer}
-.search{width:100%;margin-bottom:14px}
-table{width:100%;border-collapse:collapse}
-th{background:#C9BFA5;text-align:left;padding:9px 12px}
-td{padding:9px 12px;border-top:1px solid #E4DBC4}
-.done{background:#E3EEE6}
-.check{text-align:center;width:90px}
-.progress{margin:10px 0;color:#6B6353}
-.hidden{display:none}
-@media(max-width:700px){.wrap{padding:18px 12px}.controls{flex-direction:column;align-items:stretch}select,button{width:100%}}
+
+:root{
+  --paper:#F6F1E4;
+  --paper-line:#E4DBC4;
+
+  --ink:#2E2A22;
+  --ink-soft:#6B6353;
+
+  --green:#2F6B4F;
+  --green-bg:#E3EEE6;
+
+  --red:#A94438;
+
+  --board:#C9BFA5;
+  --board-dark:#8B8168;
+
+  --card:#FFFEFA;
+}
+
+*{
+  box-sizing:border-box;
+}
+
+body{
+  margin:0;
+
+  font-family:
+    'Segoe UI',
+    system-ui,
+    -apple-system,
+    sans-serif;
+
+  background:
+    var(--paper);
+
+  color:
+    var(--ink);
+
+  min-height:
+    100vh;
+
+  padding:
+    40px 16px 80px;
+}
+
+.wrap{
+  max-width:
+    960px;
+
+  margin:
+    0 auto;
+}
+
+.board{
+  background:
+    var(--card);
+
+  border:
+    1px solid
+    var(--board-dark);
+
+  border-radius:
+    8px;
+
+  box-shadow:
+    0 2px 0
+      var(--board-dark),
+    0 10px 24px
+      rgba(
+        60,
+        50,
+        30,
+        0.12
+      );
+
+  padding:
+    36px;
+}
+
+h1{
+  margin:
+    0 0 6px;
+
+  font-family:
+    'Courier New',
+    monospace;
+
+  text-transform:
+    uppercase;
+
+  font-size:
+    28px;
+}
+
+.subtitle{
+  margin:
+    0 0 24px;
+
+  color:
+    var(--ink-soft);
+
+  font-size:
+    14px;
+}
+
+.drop{
+  border:
+    2px dashed
+    var(--board-dark);
+
+  border-radius:
+    8px;
+
+  padding:
+    34px 20px;
+
+  text-align:
+    center;
+
+  cursor:
+    pointer;
+
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 27px,
+      var(--paper-line) 28px
+    );
+
+  margin-bottom:
+    20px;
+}
+
+.drop:hover,
+.drop.dragover{
+  border-color:
+    var(--green);
+
+  background:
+    var(--green-bg);
+}
+
+input[type=file]{
+  display:none;
+}
+
+.controls{
+  display:flex;
+
+  flex-wrap:
+    wrap;
+
+  gap:
+    14px;
+
+  align-items:
+    flex-end;
+
+  margin-bottom:
+    18px;
+}
+
+.field{
+  display:flex;
+
+  flex-direction:
+    column;
+
+  gap:
+    6px;
+}
+
+.field label{
+  font-size:
+    11px;
+
+  text-transform:
+    uppercase;
+
+  letter-spacing:
+    0.5px;
+
+  color:
+    var(--ink-soft);
+
+  font-family:
+    'Courier New',
+    monospace;
+}
+
+select,
+.btn,
+.search-input{
+  font:
+    inherit;
+
+  font-size:
+    14px;
+
+  padding:
+    9px 12px;
+
+  border-radius:
+    5px;
+
+  border:
+    1px solid
+    var(--board-dark);
+
+  background:
+    var(--card);
+
+  color:
+    var(--ink);
+}
+
+select{
+  min-width:
+    220px;
+}
+
+.btn{
+  cursor:pointer;
+}
+
+.btn:hover{
+  background:
+    var(--paper-line);
+}
+
+.btn:disabled{
+  opacity:
+    0.55;
+
+  cursor:
+    not-allowed;
+}
+
+.btn.danger{
+  color:
+    var(--red);
+
+  border-color:
+    var(--red);
+}
+
+.fileinfo{
+  color:
+    var(--ink-soft);
+
+  font-size:
+    13px;
+
+  margin-bottom:
+    14px;
+
+  font-family:
+    'Courier New',
+    monospace;
+}
+
+.progress{
+  margin:
+    10px 0 14px;
+
+  color:
+    var(--ink-soft);
+
+  font-family:
+    'Courier New',
+    monospace;
+
+  font-size:
+    13px;
+}
+
+.progress strong{
+  color:
+    var(--green);
+}
+
+.search-input{
+  width:
+    100%;
+
+  margin-bottom:
+    14px;
+}
+
+.table-scroll{
+  overflow-x:
+    auto;
+
+  border:
+    1px solid
+    var(--paper-line);
+
+  border-radius:
+    6px;
+}
+
+table{
+  width:
+    100%;
+
+  border-collapse:
+    collapse;
+
+  font-size:
+    14px;
+}
+
+thead th{
+  background:
+    var(--board);
+
+  text-align:
+    left;
+
+  padding:
+    10px 14px;
+
+  font-family:
+    'Courier New',
+    monospace;
+
+  font-size:
+    12px;
+
+  text-transform:
+    uppercase;
+
+  white-space:
+    nowrap;
+
+  position:
+    sticky;
+
+  top:
+    0;
+}
+
+thead th.check-col{
+  text-align:
+    center;
+}
+
+tbody td{
+  padding:
+    9px 14px;
+
+  border-top:
+    1px solid
+    var(--paper-line);
+
+  white-space:
+    nowrap;
+}
+
+tbody tr:nth-child(even){
+  background:
+    #FBF8F0;
+}
+
+tbody tr.done{
+  background:
+    var(--green-bg);
+}
+
+tbody tr.hidden{
+  display:
+    none;
+}
+
+td.check-cell{
+  text-align:
+    center;
+
+  width:
+    100px;
+}
+
+.stamp-box{
+  display:
+    inline-flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  width:
+    30px;
+
+  height:
+    30px;
+
+  cursor:
+    pointer;
+}
+
+.stamp-box input{
+  display:none;
+}
+
+.stamp-mark{
+  width:
+    26px;
+
+  height:
+    26px;
+
+  border:
+    2px solid
+    var(--red);
+
+  border-radius:
+    4px;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+}
+
+.stamp-box input:checked
++
+.stamp-mark{
+  border-color:
+    var(--green);
+
+  transform:
+    rotate(-6deg)
+    scale(1.06);
+}
+
+.stamp-mark svg{
+  width:
+    16px;
+
+  height:
+    16px;
+
+  opacity:
+    0;
+}
+
+.stamp-box input:checked
++
+.stamp-mark svg{
+  opacity:
+    1;
+}
+
+.stamp-date{
+  display:
+    block;
+
+  margin-top:
+    2px;
+
+  color:
+    var(--ink-soft);
+
+  font-size:
+    10px;
+
+  font-family:
+    'Courier New',
+    monospace;
+}
+
+.empty{
+  text-align:
+    center;
+
+  color:
+    var(--ink-soft);
+
+  padding:
+    36px 10px;
+}
+
+.footer-note{
+  margin-top:
+    18px;
+
+  color:
+    var(--ink-soft);
+
+  font-size:
+    12px;
+
+  text-align:
+    center;
+}
+
+.footer-note code{
+  background:
+    var(--paper-line);
+
+  padding:
+    1px 5px;
+
+  border-radius:
+    3px;
+}
+
+@media(
+  max-width:700px
+){
+
+  body{
+    padding:
+      20px 8px 60px;
+  }
+
+  .board{
+    padding:
+      22px 14px;
+  }
+
+  h1{
+    font-size:
+      21px;
+  }
+
+  .controls{
+    flex-direction:
+      column;
+
+    align-items:
+      stretch;
+  }
+
+  .field,
+  select,
+  .btn{
+    width:
+      100%;
+  }
+
+  .table-scroll{
+    border:none;
+
+    overflow:
+      visible;
+  }
+
+  table,
+  thead,
+  tbody,
+  tr,
+  td{
+    display:
+      block;
+
+    width:
+      100%;
+  }
+
+  thead{
+    position:
+      absolute;
+
+    width:
+      1px;
+
+    height:
+      1px;
+
+    overflow:
+      hidden;
+
+    clip:
+      rect(
+        0 0 0 0
+      );
+  }
+
+  tbody tr{
+    position:
+      relative;
+
+    border:
+      1px solid
+      var(--paper-line);
+
+    border-radius:
+      10px;
+
+    padding:
+      14px 90px 14px 16px;
+
+    margin-bottom:
+      12px;
+
+    background:
+      var(--card);
+  }
+
+  tbody tr.done{
+    background:
+      var(--green-bg);
+  }
+
+  tbody td{
+    border-top:
+      none;
+
+    padding:
+      5px 0;
+
+    white-space:
+      normal;
+
+    display:
+      flex;
+
+    justify-content:
+      space-between;
+
+    gap:
+      14px;
+
+    word-break:
+      break-word;
+  }
+
+  tbody td:not(.check-cell)::before{
+    content:
+      attr(
+        data-label
+      );
+
+    color:
+      var(--ink-soft);
+
+    font-size:
+      11px;
+
+    text-transform:
+      uppercase;
+
+    font-family:
+      'Courier New',
+      monospace;
+
+    flex-shrink:
+      0;
+  }
+
+  td.check-cell{
+    position:
+      absolute;
+
+    right:
+      12px;
+
+    top:
+      12px;
+
+    width:
+      auto;
+
+    padding:
+      0;
+  }
+
+  .stamp-box{
+    width:
+      44px;
+
+    height:
+      44px;
+  }
+
+  .stamp-mark{
+    width:
+      38px;
+
+    height:
+      38px;
+  }
+}
+
 </style>
+
 </head>
+
+
 <body>
+
 <div class="wrap">
-  <h1>code tubes</h1>
-  <p id="subtitle">Import the sheet and choose which column will receive the checkboxes.</p>
 
-  <div id="uploadArea" style="display:none">
-    <div class="drop" id="dropZone"><strong>Click to choose</strong> or drop a file here<br>.xlsx, .xls, .csv or .txt</div>
-    <input type="file" id="fileInput" accept=".xlsx,.xls,.csv,.txt">
-  </div>
+  <div class="board">
 
-  <div id="emptyState" style="display:none">No sheet has been loaded yet.</div>
+    <h1>
+      code tubes
+    </h1>
 
-  <div id="afterUpload" style="display:none">
-    <div class="admin-only" style="margin-bottom:14px">
-      Sheet: <strong id="fileName"></strong> · <span id="rowCount"></span> rows · <a href="#" id="changeFile">replace file</a>
-    </div>
+    <p
+      class="subtitle"
+      id="subtitle"
+    >
+      Import the sheet and choose which column will receive the checkboxes.
+    </p>
 
-    <div class="controls admin-only">
-      <div class="field">
-        <label for="colSelect">Column to check</label>
-        <select id="colSelect"></select>
+
+    <div
+      id="uploadArea"
+      style="display:none;"
+    >
+
+      <div
+        class="drop"
+        id="dropZone"
+      >
+
+        <strong>
+          Click to choose
+        </strong>
+
+        or drop a file here
+
+        <div
+          style="
+            margin-top:6px;
+            color:var(--ink-soft);
+            font-size:13px;
+          "
+        >
+          .xlsx, .xls, .csv or .txt
+        </div>
+
       </div>
-      <button id="resetBtn">
-  Clear all progress
-</button>
 
-<button id="sendReportBtn">
-  Send report by email
-</button>
+
+      <input
+        type="file"
+        id="fileInput"
+        accept=".xlsx,.xls,.csv,.txt"
+      >
+
     </div>
 
-    <input id="searchInput" class="search" type="text" placeholder="Search anything in the sheet…">
-    <div class="progress" id="progressLine"></div>
 
-    <div style="overflow-x:auto">
-      <table id="dataTable"></table>
+    <div
+      id="emptyState"
+      class="empty"
+      style="display:none;"
+    >
+      No sheet has been loaded yet.
     </div>
+
+
+    <div
+      id="afterUpload"
+      style="display:none;"
+    >
+
+      <div
+        class="fileinfo admin-only"
+        id="fileInfoBar"
+      >
+
+        Sheet:
+
+        <strong
+          id="fileName"
+        ></strong>
+
+        ·
+
+        <span
+          id="rowCount"
+        ></span>
+
+        rows
+
+        ·
+
+        <a
+          href="#"
+          id="changeFile"
+        >
+          replace file
+        </a>
+
+      </div>
+
+
+      <div
+        class="controls admin-only"
+      >
+
+        <div
+          class="field"
+        >
+
+          <label
+            for="colSelect"
+          >
+            Column to check
+          </label>
+
+          <select
+            id="colSelect"
+          ></select>
+
+        </div>
+
+
+        <button
+          class="btn danger"
+          id="resetBtn"
+        >
+          Clear all progress
+        </button>
+
+
+        <button
+          class="btn"
+          id="sendReportBtn"
+        >
+          Send report by email
+        </button>
+
+      </div>
+
+
+      <input
+        id="searchInput"
+        class="search-input"
+        type="text"
+        placeholder="Search anything in the sheet…"
+      >
+
+
+      <div
+        class="progress"
+        id="progressLine"
+      ></div>
+
+
+      <div
+        class="table-scroll"
+      >
+
+        <table
+          id="dataTable"
+        ></table>
+
+      </div>
+
+    </div>
+
+
+    <p
+      class="footer-note admin-only"
+      id="footerAdminNote"
+    >
+      Use the link with
+      <code>?admin=1</code>
+      to upload the sheet, choose the check column and send reports.
+      Share the plain link with users who only need to check items.
+    </p>
+
+
+    <p
+      class="footer-note"
+      id="footerViewerNote"
+      style="display:none;"
+    >
+      Your progress is saved automatically.
+    </p>
+
   </div>
+
 </div>
 
+
 <script>
-let headers=[], rows=[], tickColIndex=-1, rowKeys=[], allTicks={};
 
-const fileInput=document.getElementById('fileInput');
-const dropZone=document.getElementById('dropZone');
-const uploadArea=document.getElementById('uploadArea');
-const emptyState=document.getElementById('emptyState');
-const afterUpload=document.getElementById('afterUpload');
-const fileNameEl=document.getElementById('fileName');
-const rowCountEl=document.getElementById('rowCount');
-const colSelect=document.getElementById('colSelect');
-const resetBtn=document.getElementById('resetBtn');
-const changeFile=document.getElementById('changeFile');
-const searchInput=document.getElementById('searchInput');
-const progressLine=document.getElementById('progressLine');
+let headers = [];
 
-const isAdmin=new URLSearchParams(location.search).get('admin')==='1';
-if(!isAdmin) document.querySelectorAll('.admin-only').forEach(el=>el.style.display='none');
+let rows = [];
 
-dropZone.addEventListener('click',()=>fileInput.click());
-dropZone.addEventListener('dragover',e=>e.preventDefault());
-dropZone.addEventListener('drop',e=>{e.preventDefault(); if(e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);});
-fileInput.addEventListener('change',e=>{if(e.target.files.length) handleFile(e.target.files[0]);});
-changeFile.addEventListener('click',e=>{e.preventDefault();afterUpload.style.display='none';uploadArea.style.display='block';fileInput.value='';});
+let tickColIndex =
+  -1;
 
-function hashRow(row){const s=row.map(c=>String(c??'').trim().toLowerCase()).join('|');let h=0;for(let i=0;i<s.length;i++)h=(Math.imul(31,h)+s.charCodeAt(i))|0;return'r'+(h>>>0).toString(36);}
-function buildKeys(){const seen={};rowKeys=rows.map(r=>{const b=hashRow(r);seen[b]=(seen[b]||0)+1;return seen[b]>1?b+'d'+seen[b]:b;});}
+let rowKeys = [];
 
-function setupColumnSelect(preset){
-  colSelect.innerHTML='';
-  headers.forEach((h,i)=>{const o=document.createElement('option');o.value=i;o.textContent=h;colSelect.appendChild(o);});
-  tickColIndex=(typeof preset==='number'&&preset>=0)?preset:headers.length-1;
-  colSelect.value=tickColIndex;
-  colSelect.onchange=async()=>{tickColIndex=parseInt(colSelect.value,10);if(await saveDataset())renderTable();};
+let allTicks = {};
+
+
+const fileInput =
+  document.getElementById(
+    'fileInput'
+  );
+
+const dropZone =
+  document.getElementById(
+    'dropZone'
+  );
+
+const uploadArea =
+  document.getElementById(
+    'uploadArea'
+  );
+
+const emptyState =
+  document.getElementById(
+    'emptyState'
+  );
+
+const afterUpload =
+  document.getElementById(
+    'afterUpload'
+  );
+
+const fileNameEl =
+  document.getElementById(
+    'fileName'
+  );
+
+const rowCountEl =
+  document.getElementById(
+    'rowCount'
+  );
+
+const colSelect =
+  document.getElementById(
+    'colSelect'
+  );
+
+const resetBtn =
+  document.getElementById(
+    'resetBtn'
+  );
+
+const sendReportBtn =
+  document.getElementById(
+    'sendReportBtn'
+  );
+
+const changeFile =
+  document.getElementById(
+    'changeFile'
+  );
+
+const searchInput =
+  document.getElementById(
+    'searchInput'
+  );
+
+const progressLine =
+  document.getElementById(
+    'progressLine'
+  );
+
+const subtitleEl =
+  document.getElementById(
+    'subtitle'
+  );
+
+const footerViewerNote =
+  document.getElementById(
+    'footerViewerNote'
+  );
+
+
+const isAdmin =
+  new URLSearchParams(
+    location.search
+  )
+    .get('admin')
+  ===
+  '1';
+
+
+if (!isAdmin){
+
+  document
+    .querySelectorAll(
+      '.admin-only'
+    )
+    .forEach(
+      el =>
+        el.style.display =
+          'none'
+    );
+
+
+  footerViewerNote.style.display =
+    'block';
+
+
+  subtitleEl.textContent =
+    'Check items below. Pending items stay at the top and completed items move to the bottom.';
+
 }
 
-async function handleFile(file){
-  const ext=file.name.split('.').pop().toLowerCase();
-  if(ext==='txt'||ext==='csv'){
-    const text=await file.text();
-    const lines=text.split(/\r\n|\r|\n/).filter(l=>l.trim()!=='');
-    const d=lines[0].includes('\t')?'\t':',';
-    headers=lines[0].split(d).map(v=>v.trim());
-    rows=lines.slice(1).map(l=>l.split(d).map(v=>v.trim()));
-  } else {
-    const buf=await file.arrayBuffer();
-    const wb=XLSX.read(new Uint8Array(buf),{type:'array'});
-    const sheet=wb.Sheets[wb.SheetNames[0]];
-    const data=XLSX.utils.sheet_to_json(sheet,{header:1,defval:''});
-    headers=data[0].map(v=>String(v??'').trim()||'(no name)');
-    rows=data.slice(1).filter(r=>r.some(c=>String(c??'').trim()!==''));
+
+// ================================================
+// FILE UPLOAD
+// ================================================
+
+dropZone.addEventListener(
+  'click',
+  () =>
+    fileInput.click()
+);
+
+
+dropZone.addEventListener(
+  'dragover',
+  e => {
+
+    e.preventDefault();
+
+    dropZone
+      .classList
+      .add(
+        'dragover'
+      );
+
+  }
+);
+
+
+dropZone.addEventListener(
+  'dragleave',
+  () => {
+
+    dropZone
+      .classList
+      .remove(
+        'dragover'
+      );
+
+  }
+);
+
+
+dropZone.addEventListener(
+  'drop',
+  e => {
+
+    e.preventDefault();
+
+    dropZone
+      .classList
+      .remove(
+        'dragover'
+      );
+
+
+    if (
+      e.dataTransfer.files.length
+    ){
+
+      handleFile(
+        e.dataTransfer.files[0]
+      );
+
+    }
+
+  }
+);
+
+
+fileInput.addEventListener(
+  'change',
+  e => {
+
+    if (
+      e.target.files.length
+    ){
+
+      handleFile(
+        e.target.files[0]
+      );
+
+    }
+
+  }
+);
+
+
+changeFile.addEventListener(
+  'click',
+  e => {
+
+    e.preventDefault();
+
+    afterUpload.style.display =
+      'none';
+
+    uploadArea.style.display =
+      'block';
+
+    fileInput.value =
+      '';
+
+  }
+);
+
+
+// ================================================
+// ROW KEYS
+// ================================================
+
+function hashRow(
+  row
+){
+
+  const str =
+    row
+      .map(
+        c =>
+          String(
+            c ?? ''
+          )
+            .trim()
+            .toLowerCase()
+      )
+      .join('|');
+
+
+  let h = 0;
+
+
+  for (
+    let i = 0;
+    i < str.length;
+    i++
+  ){
+
+    h =
+      (
+        Math.imul(
+          31,
+          h
+        )
+        +
+        str.charCodeAt(i)
+      )
+      |
+      0;
+
   }
 
-  allTicks={};
-  fileNameEl.textContent=file.name;
-  rowCountEl.textContent=rows.length;
-  uploadArea.style.display='none';
-  emptyState.style.display='none';
-  afterUpload.style.display='block';
+
+  return (
+    'r'
+    +
+    (
+      h >>> 0
+    )
+      .toString(36)
+  );
+
+}
+
+
+function buildKeys(){
+
+  const seen = {};
+
+
+  rowKeys =
+    rows.map(
+      row => {
+
+        const base =
+          hashRow(
+            row
+          );
+
+
+        seen[base] =
+          (
+            seen[base]
+            ||
+            0
+          )
+          +
+          1;
+
+
+        return (
+          seen[base] > 1
+            ?
+            base
+            +
+            'd'
+            +
+            seen[base]
+            :
+            base
+        );
+
+      }
+    );
+
+}
+
+
+// ================================================
+// COLUMN SELECT
+// ================================================
+
+function setupColumnSelect(
+  preset
+){
+
+  colSelect.innerHTML =
+    '';
+
+
+  headers.forEach(
+    (header,index) => {
+
+      const option =
+        document.createElement(
+          'option'
+        );
+
+
+      option.value =
+        index;
+
+
+      option.textContent =
+        header;
+
+
+      colSelect.appendChild(
+        option
+      );
+
+    }
+  );
+
+
+  if (
+    typeof preset ===
+      'number'
+    &&
+    preset >= 0
+  ){
+
+    tickColIndex =
+      preset;
+
+  }else{
+
+    tickColIndex =
+      headers.length - 1;
+
+  }
+
+
+  colSelect.value =
+    tickColIndex;
+
+
+  colSelect.onchange =
+    async () => {
+
+      tickColIndex =
+        parseInt(
+          colSelect.value,
+          10
+        );
+
+
+      const ok =
+        await saveDataset();
+
+
+      if (ok){
+
+        renderTable();
+
+      }
+
+    };
+
+}
+
+
+// ================================================
+// FILE READING
+// ================================================
+
+async function handleFile(
+  file
+){
+
+  const ext =
+    file.name
+      .split('.')
+      .pop()
+      .toLowerCase();
+
+
+  if (
+    ext === 'txt'
+    ||
+    ext === 'csv'
+  ){
+
+    const text =
+      await file.text();
+
+
+    const lines =
+      text
+        .split(
+          /\r\n|\r|\n/
+        )
+        .filter(
+          line =>
+            line.trim()
+            !==
+            ''
+        );
+
+
+    if (
+      !lines.length
+    ){
+
+      alert(
+        'This file looks empty.'
+      );
+
+      return;
+
+    }
+
+
+    const delimiter =
+      lines[0]
+        .includes('\t')
+        ?
+        '\t'
+        :
+        ',';
+
+
+    headers =
+      lines[0]
+        .split(
+          delimiter
+        )
+        .map(
+          value =>
+            value.trim()
+            ||
+            '(no name)'
+        );
+
+
+    rows =
+      lines
+        .slice(1)
+        .map(
+          line =>
+            line
+              .split(
+                delimiter
+              )
+              .map(
+                value =>
+                  value.trim()
+              )
+        );
+
+  }
+
+  else{
+
+    try{
+
+      const buffer =
+        await file.arrayBuffer();
+
+
+      const workbook =
+        XLSX.read(
+          new Uint8Array(
+            buffer
+          ),
+          {
+            type:
+              'array'
+          }
+        );
+
+
+      const sheet =
+        workbook
+          .Sheets[
+            workbook
+              .SheetNames[0]
+          ];
+
+
+      const data =
+        XLSX.utils
+          .sheet_to_json(
+            sheet,
+            {
+              header:1,
+              defval:''
+            }
+          );
+
+
+      if (
+        !data.length
+      ){
+
+        alert(
+          'This sheet looks empty.'
+        );
+
+        return;
+
+      }
+
+
+      headers =
+        data[0]
+          .map(
+            value =>
+              String(
+                value ?? ''
+              )
+                .trim()
+              ||
+              '(no name)'
+          );
+
+
+      rows =
+        data
+          .slice(1)
+          .filter(
+            row =>
+              row.some(
+                cell =>
+                  String(
+                    cell ?? ''
+                  )
+                    .trim()
+                  !==
+                  ''
+              )
+          );
+
+    }catch(err){
+
+      console.error(
+        err
+      );
+
+
+      alert(
+        'Could not read that file.'
+      );
+
+
+      return;
+
+    }
+
+  }
+
+
+  allTicks = {};
+
+
+  fileNameEl.textContent =
+    file.name;
+
+
+  rowCountEl.textContent =
+    rows.length;
+
+
+  uploadArea.style.display =
+    'none';
+
+
+  emptyState.style.display =
+    'none';
+
+
+  afterUpload.style.display =
+    'block';
+
 
   setupColumnSelect();
+
+
   buildKeys();
-  if(await saveDataset()) renderTable();
+
+
+  const ok =
+    await saveDataset();
+
+
+  if (ok){
+
+    renderTable();
+
+  }
+
 }
+
+
+// ================================================
+// SERVER
+// ================================================
+
+async function loadState(){
+
+  try{
+
+    const response =
+      await fetch(
+        '/api/state'
+      );
+
+
+    if (
+      !response.ok
+    ){
+
+      return null;
+
+    }
+
+
+    return await response.json();
+
+  }catch(err){
+
+    console.error(
+      'Could not load state',
+      err
+    );
+
+
+    return null;
+
+  }
+
+}
+
 
 async function saveDataset(){
-  const res=await fetch('/api/dataset',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({headers,rows,tickColIndex})});
-  return res.ok;
+
+  try{
+
+    const response =
+      await fetch(
+        '/api/dataset',
+        {
+          method:
+            'POST',
+
+          headers:{
+            'content-type':
+              'application/json'
+          },
+
+          body:
+            JSON.stringify({
+              headers,
+              rows,
+              tickColIndex
+            })
+        }
+      );
+
+
+    if (
+      !response.ok
+    ){
+
+      alert(
+        'Could not save the sheet.'
+      );
+
+
+      return false;
+
+    }
+
+
+    return true;
+
+  }catch(err){
+
+    console.error(
+      err
+    );
+
+
+    alert(
+      'Could not reach the server.'
+    );
+
+
+    return false;
+
+  }
+
 }
 
-async function saveTick(key,checked){
-  const res=await fetch('/api/tick',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({key,checked})});
-  return res.ok;
+
+async function saveTick(
+  key,
+  checked
+){
+
+  try{
+
+    const response =
+      await fetch(
+        '/api/tick',
+        {
+          method:
+            'POST',
+
+          headers:{
+            'content-type':
+              'application/json'
+          },
+
+          body:
+            JSON.stringify({
+              key,
+              checked
+            })
+        }
+      );
+
+
+    if (
+      !response.ok
+    ){
+
+      return null;
+
+    }
+
+
+    return await response.json();
+
+  }catch(err){
+
+    console.error(
+      'Failed to save progress',
+      err
+    );
+
+
+    return null;
+
+  }
+
 }
+
+
+// ================================================
+// PROGRESS
+// ================================================
 
 function updateProgress(){
-  let done=0;
-  rows.forEach((r,i)=>{if(allTicks[rowKeys[i]]?.checked)done++;});
-  progressLine.innerHTML='<strong>'+done+'</strong> of '+rows.length+' complete';
+
+  let done =
+    0;
+
+
+  rows.forEach(
+    (row,index) => {
+
+      if (
+        allTicks[
+          rowKeys[index]
+        ]
+        &&
+        allTicks[
+          rowKeys[index]
+        ].checked
+      ){
+
+        done++;
+
+      }
+
+    }
+  );
+
+
+  progressLine.innerHTML =
+    '<strong>'
+    +
+    done
+    +
+    '</strong> of '
+    +
+    rows.length
+    +
+    ' complete';
+
 }
+
+
+// ================================================
+// SEARCH
+// ================================================
 
 function applySearch(){
-  const term=searchInput.value.trim().toLowerCase();
-  document.querySelectorAll('#dataTable tbody tr').forEach(tr=>tr.classList.toggle('hidden',term&&!tr.dataset.search.includes(term)));
+
+  const term =
+    searchInput
+      .value
+      .trim()
+      .toLowerCase();
+
+
+  document
+    .querySelectorAll(
+      '#dataTable tbody tr'
+    )
+    .forEach(
+      tr => {
+
+        const text =
+          tr.getAttribute(
+            'data-search'
+          )
+          ||
+          '';
+
+
+        const matches =
+          !term
+          ||
+          text.includes(
+            term
+          );
+
+
+        tr
+          .classList
+          .toggle(
+            'hidden',
+            !matches
+          );
+
+      }
+    );
+
 }
-searchInput.addEventListener('input',applySearch);
+
+
+searchInput.addEventListener(
+  'input',
+  applySearch
+);
+
+
+// ================================================
+// TABLE
+//
+// Unchecked first.
+// Checked second.
+//
+// Inside BOTH groups,
+// original spreadsheet order is preserved.
+// ================================================
 
 function renderTable(){
-  const table=document.getElementById('dataTable');
-  table.innerHTML='';
-  const thead=document.createElement('thead');
-  const hr=document.createElement('tr');
-  headers.forEach((h,i)=>{const th=document.createElement('th');th.textContent=i===tickColIndex?'✓':h;hr.appendChild(th);});
-  thead.appendChild(hr);table.appendChild(thead);
 
-  const tbody=document.createElement('tbody');table.appendChild(tbody);
+  const table =
+    document.getElementById(
+      'dataTable'
+    );
 
-  rows.forEach((row,ri)=>{
-    const tr=document.createElement('tr');
-    tr.dataset.search=row.map(c=>String(c??'')).join(' ').toLowerCase();
-    const state=allTicks[rowKeys[ri]]||{checked:false,date:''};
-    if(state.checked)tr.classList.add('done');
 
-    row.forEach((cell,ci)=>{
-      const td=document.createElement('td');
-      if(ci===tickColIndex){
-        td.className='check';
-        const cb=document.createElement('input');
-        cb.type='checkbox';cb.checked=!!state.checked;
-        cb.addEventListener('change',async()=>{
-          allTicks[rowKeys[ri]]={checked:cb.checked,date:cb.checked?new Date().toLocaleDateString('en-US'):''};
-          tr.classList.toggle('done',cb.checked);
-          updateProgress();
-          if(!(await saveTick(rowKeys[ri],cb.checked))){
-            cb.checked=!cb.checked;
-            allTicks[rowKeys[ri]]={checked:cb.checked,date:''};
-            tr.classList.toggle('done',cb.checked);
-            updateProgress();
-          }
-        });
-        td.appendChild(cb);
-      }else{
-        td.textContent=cell;
+  table.innerHTML =
+    '';
+
+
+  const thead =
+    document.createElement(
+      'thead'
+    );
+
+
+  const headerRow =
+    document.createElement(
+      'tr'
+    );
+
+
+  headers.forEach(
+    (header,index) => {
+
+      const th =
+        document.createElement(
+          'th'
+        );
+
+
+      th.textContent =
+        index ===
+        tickColIndex
+          ?
+          '✓'
+          :
+          header;
+
+
+      if (
+        index ===
+        tickColIndex
+      ){
+
+        th.classList.add(
+          'check-col'
+        );
+
       }
-      tr.appendChild(td);
-    });
 
-    tbody.appendChild(tr);
-  });
+
+      headerRow.appendChild(
+        th
+      );
+
+    }
+  );
+
+
+  thead.appendChild(
+    headerRow
+  );
+
+
+  table.appendChild(
+    thead
+  );
+
+
+  const tbody =
+    document.createElement(
+      'tbody'
+    );
+
+
+  table.appendChild(
+    tbody
+  );
+
+
+  // Build an array of ORIGINAL row indexes.
+  const displayOrder =
+    rows
+      .map(
+        (row,index) =>
+          index
+      )
+      .sort(
+        (a,b) => {
+
+          const aChecked =
+            !!allTicks[
+              rowKeys[a]
+            ]?.checked;
+
+
+          const bChecked =
+            !!allTicks[
+              rowKeys[b]
+            ]?.checked;
+
+
+          // Same state:
+          // keep original order.
+          if (
+            aChecked ===
+            bChecked
+          ){
+
+            return a - b;
+
+          }
+
+
+          // Pending first.
+          return aChecked
+            ?
+            1
+            :
+            -1;
+
+        }
+      );
+
+
+  displayOrder.forEach(
+    ri => {
+
+      const row =
+        rows[ri];
+
+
+      const state =
+        allTicks[
+          rowKeys[ri]
+        ]
+        ||
+        {
+          checked:false,
+          date:''
+        };
+
+
+      const tr =
+        document.createElement(
+          'tr'
+        );
+
+
+      if (
+        state.checked
+      ){
+
+        tr.classList.add(
+          'done'
+        );
+
+      }
+
+
+      tr.setAttribute(
+        'data-search',
+        row
+          .map(
+            cell =>
+              String(
+                cell ?? ''
+              )
+          )
+          .join(' ')
+          .toLowerCase()
+      );
+
+
+      row.forEach(
+        (cell,ci) => {
+
+          const td =
+            document.createElement(
+              'td'
+            );
+
+
+          td.setAttribute(
+            'data-label',
+            headers[ci]
+          );
+
+
+          if (
+            ci ===
+            tickColIndex
+          ){
+
+            td.className =
+              'check-cell';
+
+
+            const label =
+              document.createElement(
+                'label'
+              );
+
+
+            label.className =
+              'stamp-box';
+
+
+            const input =
+              document.createElement(
+                'input'
+              );
+
+
+            input.type =
+              'checkbox';
+
+
+            input.checked =
+              !!state.checked;
+
+
+            const mark =
+              document.createElement(
+                'span'
+              );
+
+
+            mark.className =
+              'stamp-mark';
+
+
+            mark.innerHTML =
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">'
+              +
+              '<path d="M4 12l5 5L20 6" stroke-linecap="round" stroke-linejoin="round"/>'
+              +
+              '</svg>';
+
+
+            label.appendChild(
+              input
+            );
+
+
+            label.appendChild(
+              mark
+            );
+
+
+            td.appendChild(
+              label
+            );
+
+
+            if (
+              state.checked
+              &&
+              state.date
+            ){
+
+              const dateEl =
+                document.createElement(
+                  'span'
+                );
+
+
+              dateEl.className =
+                'stamp-date';
+
+
+              dateEl.textContent =
+                state.date;
+
+
+              td.appendChild(
+                dateEl
+              );
+
+            }
+
+
+            input.addEventListener(
+              'change',
+              async () => {
+
+                const checked =
+                  input.checked;
+
+
+                const previous =
+                  allTicks[
+                    rowKeys[ri]
+                  ]
+                  ||
+                  {
+                    checked:false,
+                    date:''
+                  };
+
+
+                allTicks[
+                  rowKeys[ri]
+                ] = {
+                  checked,
+
+                  date:
+                    checked
+                      ?
+                      new Date()
+                        .toLocaleDateString(
+                          'en-US'
+                        )
+                      :
+                      ''
+                };
+
+
+                // Save first.
+                const result =
+                  await saveTick(
+                    rowKeys[ri],
+                    checked
+                  );
+
+
+                if (!result){
+
+                  allTicks[
+                    rowKeys[ri]
+                  ] =
+                    previous;
+
+
+                  alert(
+                    'Could not save this check. Please try again.'
+                  );
+
+
+                  renderTable();
+
+
+                  return;
+
+                }
+
+
+                // Use the date returned
+                // by the server.
+                if (
+                  result.tick
+                ){
+
+                  allTicks[
+                    rowKeys[ri]
+                  ] =
+                    result.tick;
+
+                }
+
+
+                // Re-render automatically
+                // moves item to correct group.
+                renderTable();
+
+              }
+            );
+
+          }
+
+          else{
+
+            td.textContent =
+              cell;
+
+          }
+
+
+          tr.appendChild(
+            td
+          );
+
+        }
+      );
+
+
+      tbody.appendChild(
+        tr
+      );
+
+    }
+  );
+
 
   updateProgress();
+
+
   applySearch();
+
 }
 
-resetBtn.addEventListener('click',async()=>{
-  if(!confirm('Clear all saved checkmarks?'))return;
-  const res=await fetch('/api/reset',{method:'POST'});
-  if(res.ok){allTicks={};renderTable();}
-});
+
+// ================================================
+// RESET
+// ================================================
+
+resetBtn.addEventListener(
+  'click',
+  async () => {
+
+    if (
+      !confirm(
+        'This clears every saved check mark for everyone using this page. Continue?'
+      )
+    ){
+
+      return;
+
+    }
+
+
+    try{
+
+      const response =
+        await fetch(
+          '/api/reset',
+          {
+            method:
+              'POST'
+          }
+        );
+
+
+      if (
+        response.ok
+      ){
+
+        allTicks =
+          {};
+
+
+        renderTable();
+
+      }
+
+      else{
+
+        alert(
+          'Could not clear progress.'
+        );
+
+      }
+
+    }catch(err){
+
+      console.error(
+        err
+      );
+
+
+      alert(
+        'Could not reach the server.'
+      );
+
+    }
+
+  }
+);
+
+
+// ================================================
+// SEND REPORT BY EMAIL
+// ================================================
+
+if (
+  sendReportBtn
+){
+
+  sendReportBtn.addEventListener(
+    'click',
+    async () => {
+
+      sendReportBtn.disabled =
+        true;
+
+
+      sendReportBtn.textContent =
+        'Sending…';
+
+
+      try{
+
+        const response =
+          await fetch(
+            '/api/send-report',
+            {
+              method:
+                'POST',
+
+              headers:{
+                'content-type':
+                  'application/json'
+              },
+
+              body:
+                JSON.stringify({
+                  force:true
+                })
+            }
+          );
+
+
+        let data =
+          null;
+
+
+        try{
+
+          data =
+            await response.json();
+
+        }catch(err){}
+
+
+        if (
+          response.ok
+          &&
+          data
+          &&
+          data.sent
+        ){
+
+          alert(
+            'Report sent successfully!'
+          );
+
+        }
+
+        else{
+
+          alert(
+            'Could not send report: '
+            +
+            (
+              data
+              &&
+              data.error
+                ?
+                data.error
+                :
+                'HTTP '
+                +
+                response.status
+            )
+          );
+
+        }
+
+      }catch(err){
+
+        console.error(
+          err
+        );
+
+
+        alert(
+          'Could not reach the server.'
+        );
+
+      }
+
+      finally{
+
+        sendReportBtn.disabled =
+          false;
+
+
+        sendReportBtn.textContent =
+          'Send report by email';
+
+      }
+
+    }
+  );
+
+}
+
+
+// ================================================
+// INITIAL LOAD
+// ================================================
 
 async function init(){
-  const res=await fetch('/api/state');
-  if(!res.ok){if(isAdmin)uploadArea.style.display='block';else emptyState.style.display='block';return;}
 
-  const state=await res.json();
+  const state =
+    await loadState();
 
-  if(state.rows?.length){
-    headers=state.headers;
-    rows=state.rows;
-    tickColIndex=state.tickColIndex;
-    allTicks=state.ticks||{};
-    uploadArea.style.display='none';
-    emptyState.style.display='none';
-    afterUpload.style.display='block';
-    if(isAdmin){
-      fileNameEl.textContent='(current sheet)';
-      rowCountEl.textContent=rows.length;
-      setupColumnSelect(state.tickColIndex);
+
+  if (
+    state
+    &&
+    state.headers
+    &&
+    state.rows
+    &&
+    state.rows.length
+  ){
+
+    headers =
+      state.headers;
+
+
+    rows =
+      state.rows;
+
+
+    tickColIndex =
+      state.tickColIndex;
+
+
+    allTicks =
+      state.ticks
+      ||
+      {};
+
+
+    uploadArea.style.display =
+      'none';
+
+
+    emptyState.style.display =
+      'none';
+
+
+    afterUpload.style.display =
+      'block';
+
+
+    if (isAdmin){
+
+      fileNameEl.textContent =
+        '(current sheet)';
+
+
+      rowCountEl.textContent =
+        rows.length;
+
+
+      setupColumnSelect(
+        state.tickColIndex
+      );
+
     }
+
+
     buildKeys();
+
+
     renderTable();
-  }else if(isAdmin){
-    uploadArea.style.display='block';
-  }else{
-    emptyState.style.display='block';
+
   }
+
+  else if (
+    isAdmin
+  ){
+
+    uploadArea.style.display =
+      'block';
+
+  }
+
+  else{
+
+    emptyState.style.display =
+      'block';
+
+  }
+
 }
 
+
 init();
+
 </script>
+
 </body>
+
 </html>

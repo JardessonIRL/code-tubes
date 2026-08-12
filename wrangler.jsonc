@@ -6,7 +6,7 @@
   "main": "src/index.js",
 
   "vars": {
-    "REPORT_RECIPIENTS": "jarme@boconcept.com"
+    "REPORT_RECIPIENTS": "ana.cantosouza@ucdconnect.ie"
   },
 
   "secrets_store_secrets": [

@@ -9,14 +9,6 @@
     "REPORT_RECIPIENTS": "ana.cantosouza@ucdconnect.ie"
   },
 
-  "secrets_store_secrets": [
-    {
-      "binding": "RESEND_API_KEY",
-      "store_id": "206b49d360f841698e7bf65b4d28a459",
-      "secret_name": "resend-api-key"
-    }
-  ],
-
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",

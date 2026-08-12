@@ -9,6 +9,13 @@
     "REPORT_RECIPIENTS": "ana.cantosouza@ucdconnect.ie"
   },
 
+  "secrets": {
+    "required": [
+      "MAILJET_API_KEY",
+      "MAILJET_SECRET_KEY"
+    ]
+  },
+
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
